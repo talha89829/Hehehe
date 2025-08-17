@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Hehehe Oyun</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: black;
+      color: white;
+      text-align: center;
+    }
+    canvas {
+      display: block;
+      margin: auto;
+      background: #111;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let player = { x: 400, y: 550, w: 50, h: 20 };
+    let bullets = [];
+    let targets = [];
+    let score = 0;
+
+    // Resimler
+    const durümImg = new Image();
+    durümImg.src = "durum.png";  // senin koyacağın dürüm resmi
+
+    const hedefImg = new Image();
+    hedefImg.src = "hedef.png";  // hedef resmi
+
+    const efektImg = new Image();
+    efektImg.src = "efekt.png";  // 8’li basamaklarda büyüyüp küçülecek resim
+
+    let efektActive = false;
+    let efektTimer = 0;
+    let efektScale = 1;
+    let efektDirection = 1;
+
+    function spawnTarget() {
+      targets.push({
+        x: Math.random() * 750,
+        y: 50,
+        w: 50,
+        h: 50
+      });
+    }
+
+    function shoot() {
+      bullets.push({
+        x: player.x + player.w / 2 - 10,
+        y: player.y,
+        w: 20,
+        h: 20
+      });
+    }
+
+    function update() {
+      // Mermiler
+      for (let b of bullets) {
+        b.y -= 5;
+      }
+
+      // Çarpışma
+      for (let i = targets.length - 1; i >= 0; i--) {
+        for (let j = bullets.length - 1; j >= 0; j--) {
+          let t = targets[i];
+          let b = bullets[j];
+          if (b.x < t.x + t.w && b.x + b.w > t.x && b.y < t.y + t.h && b.y + b.h > t.y) {
+            targets.splice(i, 1);
+            bullets.splice(j, 1);
+            score++;
+            if (String(score).match(/^8+$/)) {
+              efektActive = true;
+              efektTimer = 300; // ~5 saniye
+            }
+            break;
+          }
+        }
+      }
+
+      // Efekt
+      if (efektActive) {
+        efektTimer--;
+        efektScale += 0.02 * efektDirection;
+        if (efektScale > 1.5 || efektScale < 0.5) {
+          efektDirection *= -1;
+        }
+        if (efektTimer <= 0) {
+          efektActive = false;
+          efektScale = 1;
+        }
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Oyuncu
+      ctx.fillStyle = "white";
+      ctx.fillRect(player.x, player.y, player.w, player.h);
+
+      // Mermiler (dürüm resmiyle)
+      for (let b of bullets) {
+        ctx.drawImage(durümImg, b.x, b.y, b.w, b.h);
+      }
+
+      // Hedefler
+      for (let t of targets) {
+        ctx.drawImage(hedefImg, t.x, t.y, t.w, t.h);
+      }
+
+      // Skor
+      ctx.fillStyle = "white";
+      ctx.fillText("Skor: " + score, 10, 20);
+
+      // Efekt (büyüyüp küçülen resim)
+      if (efektActive) {
+        let size = 200 * efektScale;
+        ctx.drawImage(efektImg, canvas.width/2 - size/2, canvas.height/2 - size/2, size, size);
+      }
+    }
+
+    function loop() {
+      update();
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    // Kontroller
+    document.addEventListener("keydown", e => {
+      if (e.code === "ArrowLeft") player.x -= 20;
+      if (e.code === "ArrowRight") player.x += 20;
+      if (e.code === "Space") shoot();
+    });
+
+    setInterval(spawnTarget, 2000);
+    loop();
+  </script>
+</body>
+</html>
